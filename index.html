@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizador Pessoal Inteligente</title>
+  
+  <!-- Carregando Tailwind CSS para os estilos -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Configurando a fonte do aplicativo (Inter) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+
+  <!-- Bibliotecas do React e ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel para converter nosso código JSX para que o navegador entenda -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <!-- Aqui é onde o nosso App vai ser "desenhado" -->
+  <div id="root"></div>
+
+  <!-- Nosso código do Aplicativo (React/JSX) -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, createContext, useContext, useCallback, useRef } = React;
+
+    // ==========================================
+    // 1. ICONS (Inline SVGs)
+    // ==========================================
+    const Icons = {
+      Home: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+      CheckCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+      Calendar: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
+      Folder: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>,
+      Clock: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+      Activity: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+      BarChart: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>,
+      Settings: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+      Plus: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>,
+      Menu: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
+      X: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>,
+      Trash: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
+      Edit: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>,
+      ChevronRight: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m9 18 6-6-6-6"/></svg>,
+      ChevronLeft: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m15 18-6-6 6-6"/></svg>,
+      AlertCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+      Download: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+      Upload: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
+    };
+
+    // ==========================================
+    // 2. UTILS & HELPERS
+    // ==========================================
+    const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    const getTodayString = () => {
+      const d = new Date();
+      return d.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD
+    };
+
+    const formatDateBR = (dateString) => {
+      if (!dateString) return '';
+      const [y, m, d] = dateString.split('-');
+      return `${d}/${m}/${y}`;
+    };
+
+    const defaultCategories = [
+      { id: 'cat-1', name: 'Mestrado / Acadêmico', color: 'bg-blue-100 text-blue-700' },
+      { id: 'cat-2', name: 'Trabalho', color: 'bg-purple-100 text-purple-700' },
+      { id: 'cat-3', name: 'Saúde / Bem-estar', color: 'bg-green-100 text-green-700' },
+      { id: 'cat-4', name: 'Pessoal', color: 'bg-orange-100 text-orange-700' }
+    ];
+
+    // ==========================================
+    // 3. CONTEXT (State Management & LocalStorage)
+    // ==========================================
+    const AppContext = createContext();
+
+    const AppProvider = ({ children }) => {
+      const [tasks, setTasks] = useState([]);
+      const [events, setEvents] = useState([]);
+      const [projects, setProjects] = useState([]);
+      const [categories, setCategories] = useState(defaultCategories);
+      const [habits, setHabits] = useState([]);
+      
+      const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, message: '', onConfirm: null });
+      const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+      const [isLoaded, setIsLoaded] = useState(false);
+
+      // Load Data from LocalStorage on mount
+      useEffect(() => {
+        const savedData = localStorage.getItem('organizador_data');
+        if (savedData) {
+          try {
+            const parsed = JSON.parse(savedData);
+            if (parsed.tasks) setTasks(parsed.tasks);
+            if (parsed.events) setEvents(parsed.events);
+            if (parsed.projects) setProjects(parsed.projects);
+            if (parsed.categories) setCategories(parsed.categories);
+            if (parsed.habits) setHabits(parsed.habits);
+          } catch (e) {
+            console.error("Erro ao carregar dados", e);
+          }
+        }
+        setIsLoaded(true);
+      }, []);
+
+      // Save Data to LocalStorage on changes
+      useEffect(() => {
+        if (isLoaded) {
+          const data = { tasks, events, projects, categories, habits };
+          localStorage.setItem('organizador_data', JSON.stringify(data));
+        }
+      }, [tasks, events, projects, categories, habits, isLoaded]);
+
+      const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+      };
+
+      const confirmAction = (message, onConfirm) => {
+        setConfirmDialog({ isOpen: true, message, onConfirm });
+      };
+
+      const val = {
+        tasks, setTasks, events, setEvents, projects, setProjects, categories, setCategories, habits, setHabits,
+        showToast, confirmAction
+      };
+
+      if (!isLoaded) return null;
+
+      return (
+        <AppContext.Provider value={val}>
+          {children}
+          
+          {/* GLOBAL MODALS */}
+          {confirmDialog.isOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl border border-gray-100">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Confirmação</h3>
+                <p className="text-gray-600 mb-6">{confirmDialog.message}</p>
+                <div className="flex justify-end gap-3">
+                  <button 
+                    className="px-4 py-2 text-gray-600 font-medium bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                    onClick={() => setConfirmDialog({ isOpen: false })}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition"
+                    onClick={() => {
+                      if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                      setConfirmDialog({ isOpen: false });
+                    }}
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {toast.show && (
+            <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-xl z-50 transition-all text-white font-medium flex items-center gap-2
+              ${toast.type === 'error' ? 'bg-red-600' : 'bg-gradient-to-r from-teal-500 to-emerald-600'}`}>
+              <Icons.CheckCircle size={18} />
+              {toast.message}
+            </div>
+          )}
+        </AppContext.Provider>
+      );
+    };
+
+    // ==========================================
+    // 4. SHARED UI COMPONENTS
+    // ==========================================
+    const Card = ({ children, className = '' }) => (
+      <div className={`bg-white/80 backdrop-blur-md rounded-3xl border border-white shadow-sm hover:shadow-md transition-shadow ${className}`}>
+        {children}
+      </div>
+    );
+
+    const Badge = ({ children, colorClass = 'bg-gray-100 text-gray-700' }) => (
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+        {children}
+      </span>
+    );
+
+    const priorityColors = {
+      'baixa': 'bg-gray-100 text-gray-700',
+      'média': 'bg-blue-100 text-blue-700',
+      'alta': 'bg-orange-100 text-orange-700',
+      'urgente': 'bg-red-100 text-red-700'
+    };
+
+    const getCategoryColor = (catId, categories) => {
+      const cat = categories.find(c => c.id === catId);
+      return cat ? cat.color : 'bg-gray-100 text-gray-700';
+    };
+
+    // ==========================================
+    // 5. MAIN VIEWS
+    // ==========================================
+
+    // --- DASHBOARD ---
+    const Dashboard = ({ changeView }) => {
+      const { tasks, events, setTasks } = useContext(AppContext);
+      const today = getTodayString();
+      
+      const todayEvents = useMemo(() => {
+        return events.filter(e => e.date === today).sort((a, b) => a.startTime.localeCompare(b.startTime));
+      }, [events, today]);
+
+      const todayTasks = useMemo(() => {
+        return tasks.filter(t => t.dueDate === today || (!t.dueDate && t.status !== 'concluída'));
+      }, [tasks, today]);
+
+      const completedToday = todayTasks.filter(t => t.status === 'concluída').length;
+      const pendingToday = todayTasks.filter(t => t.status !== 'concluída').length;
+      const progress = todayTasks.length === 0 ? 0 : Math.round((completedToday / todayTasks.length) * 100);
+
+      const priorities = useMemo(() => {
+        return tasks.filter(t => 
+          t.status !== 'concluída' && 
+          (t.priority === 'urgente' || t.priority === 'alta' || (t.dueDate && t.dueDate <= today))
+        ).sort((a, b) => {
+          if (a.priority === 'urgente') return -1;
+          if (b.priority === 'urgente') return 1;
+          return 0;
+        }).slice(0, 5);
+      }, [tasks, today]);
+
+      const deadlines = useMemo(() => {
+        return tasks.filter(t => t.status !== 'concluída' && t.dueDate && t.dueDate >= today)
+          .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+          .slice(0, 5);
+      }, [tasks, today]);
+
+      const toggleTask = (task) => {
+        const updated = { ...task, status: task.status === 'concluída' ? 'a fazer' : 'concluída' };
+        setTasks(tasks.map(t => t.id === task.id ? updated : t));
+      };
+
+      const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Bom dia';
+        if (hour < 18) return 'Boa tarde';
+        return 'Boa noite';
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">{getGreeting()}!</h1>
+              <p className="text-indigo-950/70 mt-1 font-medium">
+                Hoje é {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}. 
+                Você tem {todayEvents.length} compromissos e {pendingToday} tarefas pendentes.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="p-5 rounded-3xl shadow-lg bg-gradient-to-br from-teal-400 to-emerald-500 text-white flex items-center gap-4 transform hover:-translate-y-1 transition-transform">
+              <div className="p-3.5 bg-white/20 rounded-2xl backdrop-blur-sm"><Icons.Activity size={26} /></div>
+              <div>
+                <p className="text-sm text-teal-50 font-medium">Progresso</p>
+                <p className="text-3xl font-bold">{progress}%</p>
+              </div>
+            </div>
+            <div className="p-5 rounded-3xl shadow-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-white flex items-center gap-4 transform hover:-translate-y-1 transition-transform">
+              <div className="p-3.5 bg-white/20 rounded-2xl backdrop-blur-sm"><Icons.CheckCircle size={26} /></div>
+              <div>
+                <p className="text-sm text-blue-50 font-medium">Concluídas</p>
+                <p className="text-3xl font-bold">{completedToday}</p>
+              </div>
+            </div>
+            <div className="p-5 rounded-3xl shadow-lg bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center gap-4 transform hover:-translate-y-1 transition-transform">
+              <div className="p-3.5 bg-white/20 rounded-2xl backdrop-blur-sm"><Icons.Calendar size={26} /></div>
+              <div>
+                <p className="text-sm text-orange-50 font-medium">Compromissos</p>
+                <p className="text-3xl font-bold">{todayEvents.length}</p>
+              </div>
+            </div>
+            <div className="p-5 rounded-3xl shadow-lg bg-gradient-to-br from-purple-400 to-pink-500 text-white flex items-center gap-4 cursor-pointer transform hover:-translate-y-1 transition-transform" onClick={() => changeView('tarefas')}>
+              <div className="p-3.5 bg-white/20 rounded-2xl backdrop-blur-sm"><Icons.Clock size={26} /></div>
+              <div>
+                <p className="text-sm text-purple-50 font-medium">Prazos</p>
+                <p className="text-3xl font-bold">{deadlines.length}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card className="col-span-1 p-5 lg:col-span-1">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Icons.Calendar size={20} className="text-teal-600" /> Agenda de Hoje
+              </h2>
+              <div className="space-y-3">
+                {todayEvents.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">Nenhum compromisso agendado.</p>
+                ) : (
+                  todayEvents.map(ev => (
+                    <div key={ev.id} className="flex gap-3 border-l-4 border-teal-500 bg-teal-50/50 p-3 rounded-r-xl">
+                      <div className="text-sm font-bold text-teal-800 min-w-[45px]">{ev.startTime}</div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{ev.title}</p>
+                        {ev.location && <p className="text-xs text-gray-600 mt-0.5">{ev.location}</p>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+
+            <Card className="col-span-1 p-5 lg:col-span-2">
+               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Icons.AlertCircle size={20} className="text-orange-500" /> Foco e Prioridades
+              </h2>
+              <div className="space-y-2">
+                {priorities.length === 0 ? (
+                   <p className="text-sm text-gray-500 text-center py-4">Tudo sob controle! Nenhuma tarefa urgente.</p>
+                ) : (
+                  priorities.map(task => (
+                    <div key={task.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl border border-transparent hover:border-gray-100 transition group">
+                      <button onClick={() => toggleTask(task)} className={`w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center
+                        ${task.status === 'concluída' ? 'bg-teal-500 border-teal-500' : 'border-gray-300 group-hover:border-teal-400'}`}>
+                        {task.status === 'concluída' && <Icons.CheckCircle size={14} className="text-white" />}
+                      </button>
+                      <div className="flex-1">
+                         <p className={`text-sm font-semibold ${task.status === 'concluída' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</p>
+                         <div className="flex items-center gap-2 mt-1">
+                            <Badge colorClass={priorityColors[task.priority]}>{task.priority}</Badge>
+                            {task.dueDate && <span className="text-xs font-medium text-red-500 flex items-center gap-1"><Icons.Clock size={12}/> {formatDateBR(task.dueDate)}</span>}
+                         </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+      );
+    };
+
+    // --- TASKS ---
+    const TasksView = () => {
+      const { tasks, setTasks, categories, confirmAction, showToast } = useContext(AppContext);
+      const [filter, setFilter] = useState('todas');
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [editingTask, setEditingTask] = useState(null);
+      const [quickAdd, setQuickAdd] = useState('');
+
+      const filteredTasks = useMemo(() => {
+        let result = [...tasks];
+        if (filter === 'pendentes') result = result.filter(t => t.status !== 'concluída');
+        if (filter === 'concluídas') result = result.filter(t => t.status === 'concluída');
+        return result.sort((a, b) => {
+          if (a.status === 'concluída' && b.status !== 'concluída') return 1;
+          if (a.status !== 'concluída' && b.status === 'concluída') return -1;
+          return new Date(a.dueDate || '2099-01-01') - new Date(b.dueDate || '2099-01-01');
+        });
+      }, [tasks, filter]);
+
+      const handleQuickAdd = (e) => {
+        e.preventDefault();
+        if (!quickAdd.trim()) return;
+        
+        let priority = 'média';
+        let dueDate = getTodayString();
+        let title = quickAdd;
+
+        if (quickAdd.toLowerCase().includes('alta prioridade')) priority = 'alta';
+        if (quickAdd.toLowerCase().includes('urgente')) priority = 'urgente';
+        if (quickAdd.toLowerCase().includes('amanhã')) {
+          const d = new Date();
+          d.setDate(d.getDate() + 1);
+          dueDate = d.toLocaleDateString('en-CA');
+        }
+
+        const newTask = {
+          id: generateId(),
+          title: title.replace(/(alta prioridade|urgente|amanhã|hoje)/gi, '').trim() || 'Nova Tarefa',
+          status: 'a fazer',
+          priority,
+          dueDate,
+          categoryId: categories[0]?.id || ''
+        };
+
+        setTasks([...tasks, newTask]);
+        setQuickAdd('');
+        showToast('Tarefa adicionada.');
+      };
+
+      const toggleStatus = (id) => {
+        setTasks(tasks.map(t => {
+          if (t.id === id) return { ...t, status: t.status === 'concluída' ? 'a fazer' : 'concluída' };
+          return t;
+        }));
+      };
+
+      const deleteTask = (id) => {
+        confirmAction('Tem certeza que deseja excluir esta tarefa?', () => {
+          setTasks(tasks.filter(t => t.id !== id));
+          showToast('Tarefa excluída.');
+        });
+      };
+
+      const openEdit = (task = null) => {
+        setEditingTask(task || { 
+          id: generateId(), title: '', description: '', status: 'a fazer', 
+          priority: 'média', dueDate: getTodayString(), categoryId: categories[0]?.id || '' 
+        });
+        setIsModalOpen(true);
+      };
+
+      const saveTask = (e) => {
+        e.preventDefault();
+        const isNew = !tasks.find(t => t.id === editingTask.id);
+        if (isNew) setTasks([...tasks, editingTask]);
+        else setTasks(tasks.map(t => t.id === editingTask.id ? editingTask : t));
+        setIsModalOpen(false);
+        showToast('Tarefa salva.');
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Todas as Tarefas</h1>
+            <button onClick={() => openEdit()} className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-indigo-600 hover:to-purple-700 transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
+              <Icons.Plus size={18} /> Nova Tarefa
+            </button>
+          </div>
+
+          <Card className="p-2 pl-4">
+            <form onSubmit={handleQuickAdd} className="flex gap-2 items-center">
+              <input 
+                type="text" 
+                placeholder="Captura rápida: Ex: Ler artigo amanhã urgente" 
+                className="flex-1 bg-transparent border-none focus:outline-none text-gray-800 placeholder-gray-400 text-sm font-medium"
+                value={quickAdd}
+                onChange={(e) => setQuickAdd(e.target.value)}
+              />
+              <button type="submit" className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                <Icons.Plus size={20} />
+              </button>
+            </form>
+          </Card>
+
+          <div className="flex gap-2">
+            {['todas', 'pendentes', 'concluídas'].map(f => (
+              <button 
+                key={f} 
+                onClick={() => setFilter(f)}
+                className={`px-4 py-1.5 rounded-full text-sm font-bold capitalize transition 
+                  ${filter === f ? 'bg-indigo-900 text-white shadow-md' : 'bg-white/60 text-gray-600 hover:bg-white border border-gray-200'}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            {filteredTasks.length === 0 ? (
+              <div className="text-center py-10 text-gray-500 bg-white/50 rounded-3xl border border-gray-100">Nenhuma tarefa encontrada.</div>
+            ) : (
+              filteredTasks.map(task => (
+                <Card key={task.id} className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition ${task.status === 'concluída' ? 'opacity-60 bg-gray-50' : ''}`}>
+                  <div className="flex items-start sm:items-center gap-4">
+                     <button onClick={() => toggleStatus(task.id)} className={`w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center mt-0.5 sm:mt-0 transition
+                        ${task.status === 'concluída' ? 'bg-teal-500 border-teal-500' : 'border-gray-300 hover:border-teal-400'}`}>
+                        {task.status === 'concluída' && <Icons.CheckCircle size={14} className="text-white" />}
+                      </button>
+                      <div>
+                        <h3 className={`font-semibold ${task.status === 'concluída' ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{task.title}</h3>
+                        {task.description && <p className="text-sm text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>}
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          {task.dueDate && <Badge colorClass="bg-gray-100 text-gray-600 font-semibold"><Icons.Calendar size={12} className="inline mr-1"/>{formatDateBR(task.dueDate)}</Badge>}
+                          <Badge colorClass={priorityColors[task.priority]}>{task.priority}</Badge>
+                          <Badge colorClass={getCategoryColor(task.categoryId, categories)}>{categories.find(c=>c.id === task.categoryId)?.name || 'Sem Categoria'}</Badge>
+                        </div>
+                      </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-auto md:opacity-0 group-hover:opacity-100 transition">
+                    <button onClick={() => openEdit(task)} className="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg transition"><Icons.Edit size={16}/></button>
+                    <button onClick={() => deleteTask(task.id)} className="p-2 text-gray-400 hover:text-red-600 bg-gray-50 rounded-lg transition"><Icons.Trash size={16}/></button>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* Edit Modal */}
+          {isModalOpen && editingTask && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+              <div className="bg-white rounded-3xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-black text-gray-900">{tasks.find(t=>t.id===editingTask.id) ? 'Editar Tarefa' : 'Nova Tarefa'}</h2>
+                  <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full p-1"><Icons.X size={20}/></button>
+                </div>
+                
+                <form onSubmit={saveTask} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Título *</label>
+                    <input required type="text" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" 
+                      value={editingTask.title} onChange={e => setEditingTask({...editingTask, title: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Descrição</label>
+                    <textarea rows="2" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" 
+                      value={editingTask.description} onChange={e => setEditingTask({...editingTask, description: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Data limite</label>
+                      <input type="date" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none" 
+                        value={editingTask.dueDate} onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Prioridade</label>
+                      <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-medium" 
+                        value={editingTask.priority} onChange={e => setEditingTask({...editingTask, priority: e.target.value})}>
+                        <option value="baixa">Baixa</option>
+                        <option value="média">Média</option>
+                        <option value="alta">Alta</option>
+                        <option value="urgente">Urgente</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Categoria</label>
+                      <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-medium" 
+                        value={editingTask.categoryId} onChange={e => setEditingTask({...editingTask, categoryId: e.target.value})}>
+                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Status</label>
+                      <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none font-medium" 
+                        value={editingTask.status} onChange={e => setEditingTask({...editingTask, status: e.target.value})}>
+                        <option value="a fazer">A Fazer</option>
+                        <option value="em andamento">Em Andamento</option>
+                        <option value="concluída">Concluída</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" className="px-5 py-2.5 bg-indigo-600 text-white font-bold hover:bg-indigo-700 rounded-xl transition shadow-md">Salvar Tarefa</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // --- CALENDAR / AGENDA ---
+    const CalendarView = () => {
+      const { events, setEvents, confirmAction, showToast } = useContext(AppContext);
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [editingEvent, setEditingEvent] = useState(null);
+
+      const sortedEvents = useMemo(() => {
+        return [...events].sort((a, b) => {
+          const dateDiff = a.date.localeCompare(b.date);
+          if (dateDiff !== 0) return dateDiff;
+          return a.startTime.localeCompare(b.startTime);
+        });
+      }, [events]);
+
+      const deleteEvent = (id) => {
+        confirmAction('Excluir este compromisso?', () => {
+          setEvents(events.filter(e => e.id !== id));
+          showToast('Compromisso excluído.');
+        });
+      };
+
+      const openEdit = (ev = null) => {
+        setEditingEvent(ev || { 
+          id: generateId(), title: '', date: getTodayString(), startTime: '09:00', endTime: '10:00', location: '', description: '' 
+        });
+        setIsModalOpen(true);
+      };
+
+      const saveEvent = (e) => {
+        e.preventDefault();
+        const conflict = events.find(ev => 
+          ev.id !== editingEvent.id && 
+          ev.date === editingEvent.date && 
+          ((editingEvent.startTime >= ev.startTime && editingEvent.startTime < ev.endTime) ||
+           (editingEvent.endTime > ev.startTime && editingEvent.endTime <= ev.endTime))
+        );
+
+        const doSave = () => {
+          const isNew = !events.find(ev => ev.id === editingEvent.id);
+          if (isNew) setEvents([...events, editingEvent]);
+          else setEvents(events.map(ev => ev.id === editingEvent.id ? editingEvent : ev));
+          setIsModalOpen(false);
+          showToast('Compromisso salvo.');
+        };
+
+        if (conflict) {
+          confirmAction(`Existe um conflito de horário com "${conflict.title}". Salvar mesmo assim?`, doSave);
+        } else {
+          doSave();
+        }
+      };
+
+      const groupedEvents = sortedEvents.reduce((acc, ev) => {
+        if (!acc[ev.date]) acc[ev.date] = [];
+        acc[ev.date].push(ev);
+        return acc;
+      }, {});
+
+      return (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Agenda</h1>
+            <button onClick={() => openEdit()} className="bg-gradient-to-r from-orange-400 to-rose-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
+              <Icons.Plus size={18} /> Novo Evento
+            </button>
+          </div>
+
+          <div className="space-y-8">
+            {Object.keys(groupedEvents).length === 0 ? (
+               <div className="text-center py-10 text-gray-500 bg-white/50 rounded-3xl border border-gray-100 font-medium">Nenhum compromisso futuro agendado.</div>
+            ) : (
+              Object.keys(groupedEvents).map(date => (
+                <div key={date}>
+                  <h3 className="text-sm font-black text-gray-500 mb-3 uppercase tracking-wider pl-1">{formatDateBR(date)}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {groupedEvents[date].map(ev => (
+                      <Card key={ev.id} className="p-5 flex justify-between items-start border-l-4 border-orange-400 group hover:-translate-y-0.5 transition-transform">
+                        <div>
+                          <h4 className="font-bold text-gray-900 text-lg">{ev.title}</h4>
+                          <p className="text-sm font-semibold text-gray-600 mt-1 flex items-center gap-1">
+                            <Icons.Clock size={14}/> {ev.startTime} - {ev.endTime}
+                          </p>
+                          {ev.location && <p className="text-sm text-gray-500 mt-1">📍 {ev.location}</p>}
+                        </div>
+                        <div className="flex md:opacity-0 group-hover:opacity-100 transition">
+                           <button onClick={() => openEdit(ev)} className="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg ml-1"><Icons.Edit size={16}/></button>
+                           <button onClick={() => deleteEvent(ev.id)} className="p-2 text-gray-400 hover:text-red-600 bg-gray-50 rounded-lg ml-1"><Icons.Trash size={16}/></button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+           {/* Edit Event Modal */}
+           {isModalOpen && editingEvent && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+              <div className="bg-white rounded-3xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-black text-gray-900">{events.find(e=>e.id===editingEvent.id) ? 'Editar Evento' : 'Novo Evento'}</h2>
+                  <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full p-1"><Icons.X size={20}/></button>
+                </div>
+                <form onSubmit={saveEvent} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Título *</label>
+                    <input required type="text" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" 
+                      value={editingEvent.title} onChange={e => setEditingEvent({...editingEvent, title: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-1">
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Data *</label>
+                      <input required type="date" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none" 
+                        value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Início *</label>
+                      <input required type="time" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none" 
+                        value={editingEvent.startTime} onChange={e => setEditingEvent({...editingEvent, startTime: e.target.value})} />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Fim *</label>
+                      <input required type="time" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none" 
+                        value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Local / Link</label>
+                    <input type="text" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none" 
+                      value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
+                  </div>
+                  <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-100 rounded-xl">Cancelar</button>
+                    <button type="submit" className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold hover:shadow-lg rounded-xl transition">Salvar Evento</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // --- HABITS ---
+    const HabitsView = () => {
+      const { habits, setHabits, showToast } = useContext(AppContext);
+      const [newHabitName, setNewHabitName] = useState('');
+
+      const last7Days = Array.from({length: 7}, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return d.toLocaleDateString('en-CA');
+      });
+
+      const addHabit = (e) => {
+        e.preventDefault();
+        if (!newHabitName.trim()) return;
+        const newHabit = { id: generateId(), name: newHabitName, history: {} };
+        setHabits([...habits, newHabit]);
+        setNewHabitName('');
+        showToast('Hábito criado.');
+      };
+
+      const toggleHabit = (habitId, dateStr) => {
+        setHabits(habits.map(h => {
+          if (h.id === habitId) {
+            const h2 = { ...h, history: { ...h.history } };
+            if (h2.history[dateStr]) delete h2.history[dateStr];
+            else h2.history[dateStr] = true;
+            return h2;
+          }
+          return h;
+        }));
+      };
+
+      const deleteHabit = (id) => {
+        setHabits(habits.filter(h => h.id !== id));
+      };
+
+      return (
+        <div className="space-y-6">
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Hábitos e Rotina</h1>
+          
+          <Card className="p-4">
+            <form onSubmit={addHabit} className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder="Novo hábito (ex: Ler 20 páginas, Beber 2L de água)" 
+                className="flex-1 p-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-indigo-500 font-medium"
+                value={newHabitName}
+                onChange={(e) => setNewHabitName(e.target.value)}
+              />
+              <button type="submit" className="px-5 py-2.5 bg-indigo-900 text-white font-bold rounded-xl hover:bg-indigo-800 transition">Adicionar</button>
+            </form>
+          </Card>
+
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50/50">
+                  <th className="p-4 border-b border-gray-100 font-bold text-gray-700 min-w-[150px]">Hábito</th>
+                  {last7Days.map(date => {
+                    const parts = date.split('-');
+                    return (
+                      <th key={date} className="p-4 border-b border-gray-100 text-center font-bold text-sm text-gray-500">
+                        {parts[2]}/{parts[1]}
+                      </th>
+                    );
+                  })}
+                  <th className="p-4 border-b border-gray-100 w-10"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {habits.length === 0 ? (
+                   <tr><td colSpan={9} className="p-6 text-center text-gray-500 font-medium">Nenhum hábito cadastrado.</td></tr>
+                ) : (
+                  habits.map(habit => (
+                    <tr key={habit.id} className="group hover:bg-white/80 transition border-b border-gray-50 last:border-0">
+                      <td className="p-4 font-bold text-gray-900">{habit.name}</td>
+                      {last7Days.map(date => (
+                        <td key={date} className="p-4 text-center">
+                          <button 
+                            onClick={() => toggleHabit(habit.id, date)}
+                            className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center mx-auto transition-colors duration-300
+                              ${habit.history[date] ? 'bg-gradient-to-br from-teal-400 to-emerald-500 border-transparent text-white shadow-sm' : 'border-gray-200 bg-gray-50 hover:border-teal-300'}`}
+                          >
+                            {habit.history[date] && <Icons.CheckCircle size={16} />}
+                          </button>
+                        </td>
+                      ))}
+                      <td className="p-4">
+                        <button onClick={() => deleteHabit(habit.id)} className="text-gray-400 hover:text-red-600 md:opacity-0 group-hover:opacity-100 transition p-2 bg-red-50 rounded-lg"><Icons.Trash size={16}/></button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      );
+    };
+
+    // --- SETTINGS ---
+    const SettingsView = () => {
+      const { tasks, setTasks, events, setEvents, projects, setProjects, categories, setCategories, habits, setHabits, showToast, confirmAction } = useContext(AppContext);
+      const fileInputRef = useRef(null);
+
+      const handleExport = () => {
+        const data = JSON.stringify({ tasks, events, projects, categories, habits }, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `organizador_backup_${getTodayString()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Dados exportados com sucesso!');
+      };
+
+      const handleImportClick = () => {
+        fileInputRef.current.click();
+      };
+
+      const handleImportFile = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const parsed = JSON.parse(event.target.result);
+            if (parsed.tasks) setTasks(parsed.tasks);
+            if (parsed.events) setEvents(parsed.events);
+            if (parsed.projects) setProjects(parsed.projects);
+            if (parsed.categories) setCategories(parsed.categories);
+            if (parsed.habits) setHabits(parsed.habits);
+            showToast('Dados importados com sucesso!');
+          } catch (error) {
+            showToast('Erro ao importar. O arquivo pode ser inválido.', 'error');
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = null; // Reset input
+      };
+
+      const handleClearData = () => {
+        confirmAction('ATENÇÃO: Isso apagará TODOS os seus dados do navegador. Não pode ser desfeito. Tem certeza?', () => {
+          localStorage.removeItem('organizador_data');
+          window.location.reload();
+        });
+      };
+
+      return (
+        <div className="space-y-6 max-w-2xl">
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Configurações e Dados</h1>
+          
+          <Card className="p-6 border-l-4 border-l-blue-500">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Icons.Folder size={22} className="text-blue-500"/> Gestão de Dados (Local)
+            </h2>
+            <p className="text-sm text-gray-600 mb-6 font-medium">
+              Seus dados são salvos localmente no seu navegador. Recomenda-se exportar backups regularmente. Ao compartilhar seu site publicado com outras pessoas, cada um terá seu próprio espaço isolado, sem acesso aos seus dados.
+            </p>
+
+            <div className="space-y-4">
+              <button onClick={handleExport} className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 transition shadow-sm">
+                <Icons.Download size={20} /> Exportar Backup (Salvar no computador)
+              </button>
+              
+              <input 
+                type="file" 
+                accept=".json" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                onChange={handleImportFile} 
+              />
+              <button onClick={handleImportClick} className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-teal-50 text-teal-700 font-bold rounded-xl hover:bg-teal-100 transition shadow-sm">
+                <Icons.Upload size={20} /> Importar Backup (Restaurar dados)
+              </button>
+              
+              <div className="pt-4 mt-4 border-t border-gray-100">
+                <button onClick={handleClearData} className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-red-50 text-red-700 font-bold rounded-xl hover:bg-red-100 transition">
+                  <Icons.Trash size={20} /> Apagar Todos os Dados Deste Aparelho
+                </button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      );
+    };
+
+
+    // ==========================================
+    // 6. MAIN LAYOUT W/ SIDEBAR
+    // ==========================================
+    const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
+      <button 
+        onClick={onClick}
+        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all duration-300
+          ${active ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg translate-x-1' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-1'}`}
+      >
+        <Icon size={20} />
+        {label}
+      </button>
+    );
+
+    const App = () => {
+      const [currentView, setCurrentView] = useState('dashboard');
+      const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+      const menuItems = [
+        { id: 'dashboard', label: 'Visão Geral', icon: Icons.Home },
+        { id: 'tarefas', label: 'Todas as Tarefas', icon: Icons.CheckCircle },
+        { id: 'calendario', label: 'Calendário', icon: Icons.Calendar },
+        { id: 'habitos', label: 'Hábitos e Rotina', icon: Icons.Activity },
+        { id: 'config', label: 'Configurações', icon: Icons.Settings },
+      ];
+
+      const renderView = () => {
+        switch (currentView) {
+          case 'dashboard': return <Dashboard changeView={setCurrentView} />;
+          case 'tarefas': return <TasksView />;
+          case 'calendario': return <CalendarView />;
+          case 'habitos': return <HabitsView />;
+          case 'config': return <SettingsView />;
+          default: return <Dashboard changeView={setCurrentView} />;
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50/50 via-purple-50/50 to-pink-50/50 flex font-sans selection:bg-purple-200">
+          
+          {/* Sidebar Desktop */}
+          <aside className="hidden md:flex flex-col w-72 bg-[#0F172A] border-none shadow-2xl fixed inset-y-0 z-10">
+            <div className="p-8 pb-4">
+              <h1 className="text-3xl font-black text-white tracking-tight">Organizador<span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">.</span></h1>
+            </div>
+            <nav className="flex-1 px-4 space-y-2 mt-6">
+              {menuItems.map(item => (
+                <SidebarItem 
+                  key={item.id} 
+                  icon={item.icon} 
+                  label={item.label} 
+                  active={currentView === item.id}
+                  onClick={() => setCurrentView(item.id)} 
+                />
+              ))}
+            </nav>
+            <div className="p-6">
+               <div className="p-4 bg-gradient-to-br from-indigo-900 to-purple-900 rounded-2xl text-center shadow-inner">
+                 <p className="text-xs text-indigo-200 font-bold uppercase tracking-wider">Seu assistente</p>
+                 <p className="text-sm text-white font-medium mt-1">de produtividade</p>
+               </div>
+            </div>
+          </aside>
+
+          {/* Mobile Header & Menu */}
+          <div className="md:hidden fixed top-0 inset-x-0 bg-[#0F172A] border-none shadow-lg z-30 flex justify-between items-center p-4">
+            <h1 className="text-xl font-black text-white">Organizador<span className="text-pink-500">.</span></h1>
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-indigo-100 hover:text-white transition-colors">
+              {isMobileMenuOpen ? <Icons.X size={26}/> : <Icons.Menu size={26}/>}
+            </button>
+          </div>
+
+          {isMobileMenuOpen && (
+            <div className="md:hidden fixed inset-0 top-[60px] bg-[#0F172A]/95 backdrop-blur-lg z-20 overflow-y-auto">
+              <nav className="p-6 space-y-3 mt-4">
+                {menuItems.map(item => (
+                  <SidebarItem 
+                    key={item.id} 
+                    icon={item.icon} 
+                    label={item.label} 
+                    active={currentView === item.id}
+                    onClick={() => { setCurrentView(item.id); setIsMobileMenuOpen(false); }} 
+                  />
+                ))}
+              </nav>
+            </div>
+          )}
+
+          {/* Main Content Area */}
+          <main className="flex-1 md:ml-72 pt-24 md:pt-10 p-4 md:p-10 max-w-7xl mx-auto w-full">
+            {renderView()}
+          </main>
+
+        </div>
+      );
+    };
+
+    const Root = () => (
+      <AppProvider>
+        <App />
+      </AppProvider>
+    );
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<Root />);
+  </script>
+</body>
+</html>
